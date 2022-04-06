@@ -19,7 +19,7 @@
     "num_workers": 8,
     "n_points": 2048,
 
-    "max_epochs": 1000, 
+    "max_epochs": 300, 
     "batch_size": 64,
     "gp_lambda": 10,
     "reconstruction_coef": 0.05,
