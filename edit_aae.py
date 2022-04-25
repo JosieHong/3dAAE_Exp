@@ -1,7 +1,7 @@
 '''
 Date: 2022-04-24 15:04:36
 LastEditors: yuhhong
-LastEditTime: 2022-04-25 11:18:41
+LastEditTime: 2022-04-25 12:35:48
 '''
 import os
 import logging
@@ -88,7 +88,7 @@ def main(eval_config, epoch):
     #
     # Editing
     # 
-    for point_data in data_loader: 
+    for i, point_data in enumerate(data_loader): 
         # 1. Get the encoding results in latent space 
         X, _ = point_data
         X = X.to(device)
@@ -101,40 +101,51 @@ def main(eval_config, epoch):
             codes, _, _ = E(X) # codes.size(): torch.Size([64, 2048])
 
         # 2. Show the points and codes (only first 5)
-        for k in range(eval_config['edit_samples']): 
+        for k in range(eval_config['edit_samples']):
+            idx = i * eval_config['batch_size'] + k
+
             fig = plot_3d_point_cloud(X[k][0].cpu(), X[k][1].cpu(), X[k][2].cpu(),
                                       in_u_sphere=True, show=False)
             fig.savefig(
-                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{k}_real.png'))
+                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{idx}_real.png'))
             plt.close(fig)
 
             fig = plot_codes(codes[k].cpu(), show=False, show_axis=False, 
                             figsize=(10, 2.5))
             fig.savefig(
-                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{k}_codes.png'))
+                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{idx}_codes.png'))
             plt.close(fig)
 
         # 3. Edit all the codes (add next)
-        new_codes = codes
+        new_codes = torch.zeros_like(codes)
         for k in range(codes.size()[0]): 
-            new_codes[k] += codes[(k+1) % codes.size()[0]]
+            new_codes[k] = 0.5 * codes[k] + 0.5 * codes[(k+1) % codes.size()[0]]
 
         # 3. Generate the points clouds    
         with torch.no_grad():
-            X_g = G(new_codes)
+            X_g = G(codes)
+            new_X_g = G(new_codes)
         
         # 4. Show edited codes and generated point clouds
         for k in range(eval_config['edit_samples']): 
+            idx = i * eval_config['batch_size'] + k
+
             fig = plot_3d_point_cloud(X_g[k][0].cpu(), X_g[k][1].cpu(), X_g[k][2].cpu(),
                                       in_u_sphere=True, show=False)
             fig.savefig(
-                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{k}_gen.png'))
+                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{idx}_reconstructed.png'))
+            plt.close(fig)
+
+            fig = plot_3d_point_cloud(new_X_g[k][0].cpu(), new_X_g[k][1].cpu(), new_X_g[k][2].cpu(),
+                                      in_u_sphere=True, show=False)
+            fig.savefig(
+                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{idx}_gen.png'))
             plt.close(fig)
 
             fig = plot_codes(new_codes[k].cpu(), show=False, show_axis=False, 
                             figsize=(10, 2.5))
             fig.savefig(
-                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{k}_addnext.png'))
+                os.path.join(train_results_path, 'editing', f'{epoch:0>5}_{idx}_addnext.png'))
             plt.close(fig)
 
 

@@ -1,7 +1,7 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-04-24 16:03:30
+ * @LastEditTime: 2022-04-25 12:52:09
 -->
 # PointAAE
 
@@ -38,26 +38,25 @@ A visualization of reconstruction during training:
 python eval_aae.py --config ./settings/init_exp.json
 ```
 
-After 300 epoch training: 
+We are expected to train it for more than 2000 epochs as the author did in the paper, but it crashed after 400 iterations. Let's find out what happened. 
 
 ```bash
-2022-04-06 12:03:25,281: DEBUG    Evaluating JensenShannon divergences on validation set on all saved epochs.
-2022-04-06 12:03:25,282: DEBUG    Testing epochs: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295]
-2022-04-06 12:03:25,857: DEBUG    Device variable: cuda
-2022-04-06 12:03:25,857: DEBUG    Current CUDA device: 1
-2022-04-06 12:03:26,855: DEBUG    Selected all classes. Loaded 2870 samples.
-2022-04-06 12:06:07,337: DEBUG    Epoch: 295 JSD:  0.658785 Time: 0:02:37.607074
-2022-04-06 12:08:41,789: DEBUG    Epoch: 290 JSD:  0.644904 Time: 0:02:34.170156
-2022-04-06 12:11:10,268: DEBUG    Epoch: 285 JSD:  0.652403 Time: 0:02:28.201789
-2022-04-06 12:13:45,225: DEBUG    Epoch: 280 JSD:  0.649380 Time: 0:02:34.684850
-2022-04-06 12:16:08,869: DEBUG    Epoch: 275 JSD:  0.651107 Time: 0:02:23.347013
-2022-04-06 12:18:22,778: DEBUG    Epoch: 270 JSD:  0.669900 Time: 0:02:13.646959
-2022-04-06 12:21:02,326: DEBUG    Epoch: 265 JSD:  0.667532 Time: 0:02:39.274505
-^C2022-04-06 12:21:25,830: DEBUG    Interrupted during epoch: 260
-2022-04-06 12:21:25,850: DEBUG    Minimum JSD at epoch 290:  0.644904
+2022-04-25 12:06:05,489: DEBUG    Evaluating JensenShannon divergences on validation set on all saved epochs.
+2022-04-25 12:06:05,490: DEBUG    Testing epochs: [50, 100, 150, 200, 250, 300, 350, 400, 450]
+2022-04-25 12:06:06,159: DEBUG    Device variable: cuda
+2022-04-25 12:06:06,159: DEBUG    Current CUDA device: 0
+2022-04-25 12:06:07,179: DEBUG    Selected all classes. Loaded 2870 samples.
+2022-04-25 12:08:45,067: DEBUG    Epoch: 450 JSD:  0.653789 Time: 0:02:33.634625
+2022-04-25 12:11:20,719: DEBUG    Epoch: 400 JSD:  0.655928 Time: 0:02:35.586871
+2022-04-25 12:13:54,555: DEBUG    Epoch: 350 JSD:  0.657119 Time: 0:02:33.597101
+2022-04-25 12:16:34,994: DEBUG    Epoch: 300 JSD:  0.663368 Time: 0:02:40.202922
+2022-04-25 12:19:15,950: DEBUG    Epoch: 250 JSD:  0.663630 Time: 0:02:40.750014
+2022-04-25 12:21:59,826: DEBUG    Epoch: 200 JSD:  0.649842 Time: 0:02:43.644191
+2022-04-25 12:24:40,552: DEBUG    Epoch: 150 JSD:  0.656921 Time: 0:02:40.529231
+2022-04-25 12:27:14,297: DEBUG    Epoch: 100 JSD:  0.666355 Time: 0:02:33.505640
+2022-04-25 12:29:49,034: DEBUG    Epoch: 50 JSD:  0.663614 Time: 0:02:34.500206
+2022-04-25 12:29:49,043: DEBUG    Minimum JSD at epoch 200:  0.649842
 ```
-
-We are expected to train it for more than 2000 epochs as the author did in the paper. New results are coming soon.  
 
 ## Edit
 
@@ -65,8 +64,12 @@ We are expected to train it for more than 2000 epochs as the author did in the p
 python edit_aae.py --config ./settings/init_exp.json --epoch 400
 ```
 
+A visualization of editing (sum two embedded vectors): 
 
+<img src="./img/edit_res.png" alt="edit_res" width="500"/>
 
 ## References:
 
-https://github.com/MaciejZamorski/3d-AAE
+- https://github.com/MaciejZamorski/3d-AAE
+
+- https://github.com/AnTao97/dgcnn.pytorch

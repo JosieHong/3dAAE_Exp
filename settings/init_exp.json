@@ -18,7 +18,7 @@
     "transforms": ["rotate"],
     "num_workers": 8,
     "n_points": 2048,
-    "edit_samples": 5, 
+    "edit_samples": 16,  
 
     "max_epochs": 500, 
     "batch_size": 64,
