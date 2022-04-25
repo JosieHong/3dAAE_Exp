@@ -1,7 +1,7 @@
 '''
 Date: 2022-03-27 14:22:24
 LastEditors: yuhhong
-LastEditTime: 2022-03-27 14:22:25
+LastEditTime: 2022-04-25 11:18:22
 '''
 import matplotlib.pyplot as plt
 import numpy as np
@@ -161,3 +161,33 @@ def transform_point_clouds(X, only_z_rotation=False, deflection=1.0):
         r_rotation[2, 2] = 1
     X = X.dot(r_rotation).astype(np.float32)
     return X
+
+def plot_codes(codes, show=True, show_axis=True, figsize=(5, 5),
+                axis=None, title=None, *args, **kwargs): 
+    plt.switch_backend('agg')
+    if axis is None:
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+    else:
+        ax = axis
+        fig = axis
+
+    if title is not None:
+        plt.title(title)
+
+    # barprops = dict(aspect='auto', cmap='binary', interpolation='nearest')
+    codes = np.expand_dims(codes, axis=0)
+    codes = np.repeat(codes, 500, axis=0)
+    # codes_bar = ax.imshow(codes, **barprops)
+    codes_bar = ax.imshow(codes, cmap='summer')
+    
+    if not show_axis:
+        plt.axis('off')
+
+    if 'c' in kwargs:
+        plt.colorbar(codes_bar)
+
+    if show:
+        plt.show()
+
+    return fig

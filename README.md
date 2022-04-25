@@ -1,7 +1,7 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-04-06 12:22:12
+ * @LastEditTime: 2022-04-24 16:03:30
 -->
 # PointAAE
 
@@ -58,6 +58,14 @@ After 300 epoch training:
 ```
 
 We are expected to train it for more than 2000 epochs as the author did in the paper. New results are coming soon.  
+
+## Edit
+
+```bash
+python edit_aae.py --config ./settings/init_exp.json --epoch 400
+```
+
+
 
 ## References:
 

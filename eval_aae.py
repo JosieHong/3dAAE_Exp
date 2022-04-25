@@ -1,7 +1,7 @@
 '''
 Date: 2022-04-06 11:57:32
 LastEditors: yuhhong
-LastEditTime: 2022-04-06 12:01:17
+LastEditTime: 2022-04-24 15:21:52
 '''
 import argparse
 import json
@@ -16,7 +16,6 @@ from os.path import join
 import numpy as np
 import pandas as pd
 import torch
-from torch.distributions.beta import Beta
 from torch.utils.data import DataLoader
 
 from datasets.shapenet import ShapeNetDataset
@@ -66,14 +65,14 @@ def main(eval_config):
     if dataset_name == 'shapenet':
         dataset = ShapeNetDataset(root_dir=train_config['data_dir'],
                                   classes=train_config['classes'], split='valid')
-    elif dataset_name == 'faust':
-        from datasets.dfaust import DFaustDataset
-        dataset = DFaustDataset(root_dir=train_config['data_dir'],
-                                classes=train_config['classes'], split='valid')
-    elif dataset_name == 'mcgill':
-        from datasets.mcgill import McGillDataset
-        dataset = McGillDataset(root_dir=train_config['data_dir'],
-                                classes=train_config['classes'], split='valid')
+    # elif dataset_name == 'faust':
+    #     from datasets.dfaust import DFaustDataset
+    #     dataset = DFaustDataset(root_dir=train_config['data_dir'],
+    #                             classes=train_config['classes'], split='valid')
+    # elif dataset_name == 'mcgill':
+    #     from datasets.mcgill import McGillDataset
+    #     dataset = McGillDataset(root_dir=train_config['data_dir'],
+    #                             classes=train_config['classes'], split='valid')
     else:
         raise ValueError(f'Invalid dataset name. Expected `shapenet` or '
                          f'`faust`. Got: `{dataset_name}`')

@@ -4,7 +4,7 @@
     "clean_results_dir": false,
 
     "cuda": true,
-    "gpu": 1,
+    "gpu": 0, 
 
     "reconstruction_loss": "chamfer",
 
@@ -18,8 +18,9 @@
     "transforms": ["rotate"],
     "num_workers": 8,
     "n_points": 2048,
+    "edit_samples": 5, 
 
-    "max_epochs": 300, 
+    "max_epochs": 500, 
     "batch_size": 64,
     "gp_lambda": 10,
     "reconstruction_coef": 0.05,
@@ -34,7 +35,7 @@
     "normal_std": 0.2,
 
     "seed": 2018,
-    "save_frequency": 5,
+    "save_frequency": 50,
     "epsilon": 0.001,
 
     "arch": "aae",
