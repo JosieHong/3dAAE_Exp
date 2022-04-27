@@ -1,7 +1,7 @@
 '''
 Date: 2022-03-27 14:07:34
 LastEditors: yuhhong
-LastEditTime: 2022-03-27 20:06:03
+LastEditTime: 2022-04-27 13:25:33
 '''
 import argparse
 import json
@@ -113,15 +113,21 @@ def main(config):
     noise = noise.to(device)
 
     #
-    # Optimizers
-    #
+    # Optimizers and Scheduler
+    # 
+    assert config['lr_scheduler']['EG']['type'] == 'StepLR' or 'MultiStepLR'
     EG_optim = getattr(optim, config['optimizer']['EG']['type'])
     EG_optim = EG_optim(chain(E.parameters(), G.parameters()),
                         **config['optimizer']['EG']['hyperparams'])
+    EG_scheduler = getattr(optim.lr_scheduler, config['lr_scheduler']['EG']['type'])
+    EG_scheduler = EG_scheduler(EG_optim, **config['lr_scheduler']['EG']['hyperparams'])
 
+    assert config['lr_scheduler']['D']['type'] == 'StepLR' or 'MultiStepLR'
     D_optim = getattr(optim, config['optimizer']['D']['type'])
     D_optim = D_optim(D.parameters(),
                       **config['optimizer']['D']['hyperparams'])
+    D_scheduler = getattr(optim.lr_scheduler, config['lr_scheduler']['D']['type'])
+    D_scheduler = D_scheduler(D_optim, **config['lr_scheduler']['D']['hyperparams'])
 
     if starting_epoch > 1:
         G.load_state_dict(torch.load(
@@ -132,10 +138,13 @@ def main(config):
             join(weights_path, f'{starting_epoch-1:05}_D.pth')))
 
         D_optim.load_state_dict(torch.load(
-            join(weights_path, f'{starting_epoch-1:05}_Do.pth')))
-
+            join(weights_path, f'{starting_epoch-1:05}_Do.pth'))['optimizer'])
         EG_optim.load_state_dict(torch.load(
-            join(weights_path, f'{starting_epoch-1:05}_EGo.pth')))
+            join(weights_path, f'{starting_epoch-1:05}_EGo.pth'))['optimizer'])
+        D_scheduler.load_state_dict(torch.load(
+            join(weights_path, f'{starting_epoch-1:05}_Do.pth'))['scheduler'])
+        EG_scheduler.load_state_dict(torch.load(
+            join(weights_path, f'{starting_epoch-1:05}_EGo.pth'))['scheduler'])
 
     for epoch in range(starting_epoch, config['max_epochs'] + 1):
         start_epoch_time = datetime.now()
@@ -221,6 +230,8 @@ def main(config):
             f'Loss_EG: {total_loss_eg / i:.4f} '
             f'Time: {datetime.now() - start_epoch_time}'
         )
+        EG_scheduler.step()
+        D_scheduler.step()
 
         #
         # Save intermediate results
@@ -264,10 +275,9 @@ def main(config):
             torch.save(D.state_dict(), join(weights_path, f'{epoch:05}_D.pth'))
             torch.save(E.state_dict(), join(weights_path, f'{epoch:05}_E.pth'))
 
-            torch.save(EG_optim.state_dict(),
+            torch.save({'optimizer': EG_optim.state_dict(), 'scheduler': EG_scheduler.state_dict()},
                        join(weights_path, f'{epoch:05}_EGo.pth'))
-
-            torch.save(D_optim.state_dict(),
+            torch.save({'optimizer': D_optim.state_dict(), 'scheduler': D_scheduler.state_dict()},
                        join(weights_path, f'{epoch:05}_Do.pth'))
 
 

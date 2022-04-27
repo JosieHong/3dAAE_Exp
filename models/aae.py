@@ -1,12 +1,11 @@
 '''
 Date: 2022-03-27 14:18:14
 LastEditors: yuhhong
-LastEditTime: 2022-03-27 14:18:14
+LastEditTime: 2022-04-25 16:26:34
 '''
 import torch
 import torch.nn as nn
 
-_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class Generator(nn.Module):
@@ -119,3 +118,5 @@ class Encoder(nn.Module):
         logvar = self.std_layer(logit)
         z = self.reparameterize(mu, logvar)
         return z, mu, logvar
+
+
