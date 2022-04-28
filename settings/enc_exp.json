@@ -4,12 +4,11 @@
     "clean_results_dir": false,
 
     "cuda": true,
-    "gpu": 0, 
+    "gpu": 1, 
 
     "reconstruction_loss": "chamfer",
 
-    "metrics": [
-    ],
+    "metrics": ["jsd"], 
 
     "dataset": "shapenet",
     "data_dir": "./data/shapenet",

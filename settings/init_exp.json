@@ -8,8 +8,7 @@
 
     "reconstruction_loss": "chamfer",
 
-    "metrics": [
-    ],
+    "metrics": ["jsd"], 
 
     "dataset": "shapenet",
     "data_dir": "./data/shapenet",
@@ -20,7 +19,7 @@
     "n_points": 2048,
     "edit_samples": 16,  
 
-    "max_epochs": 500, 
+    "max_epochs": 2000, 
     "batch_size": 64,
     "gp_lambda": 10,
     "reconstruction_coef": 0.05,
@@ -71,6 +70,22 @@
                 "weight_decay": 0,
                 "betas": [0.9, 0.999],
                 "amsgrad": false
+            }
+        }
+    }, 
+    "lr_scheduler": {
+        "D": {
+            "type": "MultiStepLR",
+            "hyperparams": {
+                "milestones": [0],
+                "gamma": 1
+            }
+        },
+        "EG": {
+            "type": "MultiStepLR",
+            "hyperparams": {
+                "milestones": [0],
+                "gamma": 1
             }
         }
     }

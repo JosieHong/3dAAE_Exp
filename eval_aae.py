@@ -1,7 +1,7 @@
 '''
 Date: 2022-04-06 11:57:32
 LastEditors: yuhhong
-LastEditTime: 2022-04-24 15:21:52
+LastEditTime: 2022-04-28 00:24:56
 '''
 import argparse
 import json
@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 
 from datasets.shapenet import ShapeNetDataset
 from metrics.jsd import jsd_between_point_cloud_sets
+from metrics.mmd import mmd_between_point_cloud_sets
 from utils.util import cuda_setup, setup_logging
 
 
@@ -107,13 +108,21 @@ def main(eval_config):
 
     # We take 3 times as many samples as there are in test data in order to
     # perform JSD calculation in the same manner as in the reference publication
-    noise = torch.FloatTensor(3 * num_samples, train_config['z_size'], 1)
+    # noise = torch.FloatTensor(3 * num_samples, train_config['z_size'], 1)
+    # J0sie: Why?
+    noise = torch.FloatTensor(num_samples, train_config['z_size'], 1)
     noise = noise.to(device)
 
     X, _ = next(iter(data_loader))
     X = X.to(device)
 
-    results = {}
+    assert len(eval_config['metrics']) != 0
+    if 'jsd' in eval_config['metrics'] and 'mmd' in eval_config['metrics']:
+        results = {'epoch': [], 'jsd': [], 'mmd-cd': [], 'mmd-emd': []}
+    elif 'jsd' in eval_config['metrics']:
+        results = {'epoch': [], 'jsd': []}
+    elif 'mmd' in eval_config['metrics']:
+        results = {'epoch': [], 'mmd-cd': [], 'mmd-emd': []}
 
     for epoch in reversed(epochs):
         try:
@@ -126,7 +135,9 @@ def main(eval_config):
 
             # We average JSD computation from 3 independet trials.
             js_results = []
-            for _ in range(3):
+            cd_results = []
+            emd_results = []
+            for _ in range(3): 
                 if distribution == 'normal':
                     noise.normal_(0, 0.2)
                 elif distribution == 'beta':
@@ -137,23 +148,47 @@ def main(eval_config):
 
                 with torch.no_grad():
                     X_g = G(noise)
-                if X_g.shape[-2:] == (3, 2048):
+                if X_g.shape[-2:] == (3, 2048): 
                     X_g.transpose_(1, 2)
 
-                jsd = jsd_between_point_cloud_sets(X, X_g, voxels=28)
-                js_results.append(jsd)
+                if 'jsd' in eval_config['metrics']:
+                    jsd = jsd_between_point_cloud_sets(X, X_g, voxels=28)
+                    js_results.append(jsd)
 
-            js_result = np.mean(js_results)
-            log.debug(f'Epoch: {epoch} JSD: {js_result: .6f} '
-                      f'Time: {datetime.now() - start_clock}')
-            results[epoch] = js_result
+                if 'mmd' in eval_config['metrics']: 
+                    cd, emd = mmd_between_point_cloud_sets(X, X_g, 
+                                    batch_size=eval_config['batch_size'], reduced=True)
+                    cd_results.append(cd)
+                    emd_results.append(emd)
+
+            
+            results['epoch'].append(epoch)
+            if 'jsd' in eval_config['metrics']:
+                js_result = np.mean(js_results)
+                log.debug(f'Epoch: {epoch} JSD: {js_result: .6f} '
+                            f'Time: {datetime.now() - start_clock}')
+                results['jsd'].append(js_result)
+
+            if 'mmd' in eval_config['metrics']: 
+                cd_result = np.mean(cd_results)
+                emd_result = np.mean(emd_results)
+                log.debug(f'Epoch: {epoch} MMD-CD: {cd_result: .6f} MMD-EMD: {emd_result: .6f} '
+                            f'Time: {datetime.now() - start_clock}')
+                results['mmd-cd'].append(cd_result)
+                results['mmd-emd'].append(emd_result)
+
         except KeyboardInterrupt:
             log.debug(f'Interrupted during epoch: {epoch}')
             break
 
-    results = pd.DataFrame.from_dict(results, orient='index', columns=['jsd'])
+    # results = pd.DataFrame.from_dict(results, orient='index', columns=['jsd'])
+    results = pd.DataFrame.from_dict(results).set_index('epoch')
     log.debug(f"Minimum JSD at epoch {results.idxmin()['jsd']}: "
-              f"{results.min()['jsd']: .6f}")
+              f"{results.min()['jsd']: .6f}"
+              f"Minimum MMD-CD at epoch {results.idxmin()['mmd-cd']}: "
+              f"{results.min()['mmd-cd']: .6f}"
+              f"Minimum MMD-EMD at epoch {results.idxmin()['mmd-emd']}: "
+              f"{results.min()['mmd-emd']: .6f}")
 
 
 if __name__ == '__main__':
