@@ -1,13 +1,13 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-04-28 00:26:05
+ * @LastEditTime: 2022-04-28 00:44:41
 -->
 # PointAAE
 
 In this project, we try to edit the latent representation of PointAAE and generate new reasonable point clouds from the operated latent representation. 
 
-<img src="./img/pointaae.png" alt="pointaae" width="500"/>
+<img src="./img/pointaae.png" alt="pointaae" width="800"/>
 
 ## Setup
 
