@@ -1,7 +1,7 @@
 '''
 Date: 2022-04-06 11:57:32
 LastEditors: yuhhong
-LastEditTime: 2022-04-28 00:24:56
+LastEditTime: 2022-04-30 15:04:40
 '''
 import argparse
 import json
@@ -59,9 +59,9 @@ def main(eval_config):
     if device.type == 'cuda':
         log.debug(f'Current CUDA device: {torch.cuda.current_device()}')
 
-    #
+    # ########################################
     # Dataset
-    #
+    # ########################################
     dataset_name = train_config['dataset'].lower()
     if dataset_name == 'shapenet':
         dataset = ShapeNetDataset(root_dir=train_config['data_dir'],
@@ -75,8 +75,8 @@ def main(eval_config):
     #     dataset = McGillDataset(root_dir=train_config['data_dir'],
     #                             classes=train_config['classes'], split='valid')
     else:
-        raise ValueError(f'Invalid dataset name. Expected `shapenet` or '
-                         f'`faust`. Got: `{dataset_name}`')
+        raise ValueError(f'Invalid dataset name. Expected `shapenet` '
+                         f'Got: `{dataset_name}`')
     classes_selected = ('all' if not train_config['classes']
                         else ','.join(train_config['classes']))
     log.debug(f'Selected {classes_selected} classes. Loaded {len(dataset)} '
@@ -90,9 +90,9 @@ def main(eval_config):
         log.warning('No distribution type specified. Assumed normal = N(0, 0.2)')
         distribution = 'normal'
 
-    #
+    # ########################################
     # Models
-    #
+    # ########################################
     # arch = import_module(f"model.architectures.{train_config['arch']}")
     arch = import_module(f"models.{train_config['arch']}")
     E = arch.Encoder(train_config).to(device)
@@ -101,7 +101,8 @@ def main(eval_config):
     E.eval()
     G.eval()
 
-    num_samples = len(dataset.point_clouds_names_valid)
+    # num_samples = len(dataset.point_clouds_names_valid)
+    num_samples = eval_config['batch_size']
     data_loader = DataLoader(dataset, batch_size=num_samples,
                              shuffle=False, num_workers=4,
                              drop_last=False, pin_memory=True)
@@ -118,13 +119,15 @@ def main(eval_config):
 
     assert len(eval_config['metrics']) != 0
     if 'jsd' in eval_config['metrics'] and 'mmd' in eval_config['metrics']:
-        results = {'epoch': [], 'jsd': [], 'mmd-cd': [], 'mmd-emd': []}
+        results = {'epoch': [], 'gen_jsd': [], 'rec_jsd': [], 'gen_mmd-cd': [], 
+                    'rec_mmd-cd': [], 'gen_mmd-emd': [], 'rec_mmd-emd': []}
     elif 'jsd' in eval_config['metrics']:
-        results = {'epoch': [], 'jsd': []}
+        results = {'epoch': [], 'gen_jsd': [], 'rec_jsd': []}
     elif 'mmd' in eval_config['metrics']:
-        results = {'epoch': [], 'mmd-cd': [], 'mmd-emd': []}
+        results = {'epoch': [], 'gen_mmd-cd': [], 'rec_mmd-cd': [], 
+                    'gen_mmd-emd': [], 'rec_mmd-emd': []}
 
-    for epoch in reversed(epochs):
+    for epoch in reversed(epochs): 
         try:
             E.load_state_dict(torch.load(
                 join(weights_path, f'{epoch:05}_E.pth')))
@@ -133,6 +136,36 @@ def main(eval_config):
 
             start_clock = datetime.now()
 
+            # ########################################
+            # Reconstruction
+            # ########################################
+            # Change dim [BATCH, N_POINTS, N_DIM] -> [BATCH, N_DIM, N_POINTS]
+            X.transpose_(X.dim() - 2, X.dim() - 1)
+            # inference
+            with torch.no_grad(): 
+                codes, _, _ = E(X) # codes.size(): torch.Size([64, 2048])
+                X_r = G(codes)
+            # post-process
+            X_r.transpose_(1, 2)
+            X.transpose_(1, 2)
+
+            # metrics
+            if 'jsd' in eval_config['metrics']:
+                try:
+                    jsd_rec = jsd_between_point_cloud_sets(X, X_r, voxels=28)
+                except ValueError: 
+                    continue
+
+            if 'mmd' in eval_config['metrics']: 
+                try:
+                    cd_rec, emd_rec = mmd_between_point_cloud_sets(X, X_r, 
+                                    batch_size=eval_config['batch_size'], reduced=True)
+                except ValueError: 
+                    continue
+            
+            # ########################################
+            # Generateion
+            # ########################################
             # We average JSD computation from 3 independet trials.
             js_results = []
             cd_results = []
@@ -148,34 +181,57 @@ def main(eval_config):
 
                 with torch.no_grad():
                     X_g = G(noise)
-                if X_g.shape[-2:] == (3, 2048): 
-                    X_g.transpose_(1, 2)
+                # post-process
+                X_g.transpose_(1, 2)
 
                 if 'jsd' in eval_config['metrics']:
-                    jsd = jsd_between_point_cloud_sets(X, X_g, voxels=28)
-                    js_results.append(jsd)
+                    try:
+                        jsd = jsd_between_point_cloud_sets(X, X_g, voxels=28)
+                        js_results.append(jsd)
+                    except ValueError: 
+                        # log.debug(f'NaN result in epoch: {epoch}')
+                        continue
 
                 if 'mmd' in eval_config['metrics']: 
-                    cd, emd = mmd_between_point_cloud_sets(X, X_g, 
-                                    batch_size=eval_config['batch_size'], reduced=True)
-                    cd_results.append(cd)
-                    emd_results.append(emd)
-
-            
+                    try:
+                        cd, emd = mmd_between_point_cloud_sets(X, X_g, 
+                                        batch_size=eval_config['batch_size'], reduced=True)
+                        cd_results.append(cd)
+                        emd_results.append(emd)
+                    except ValueError: 
+                        # log.debug(f'NaN result in epoch: {epoch}')
+                        continue
+                    
             results['epoch'].append(epoch)
             if 'jsd' in eval_config['metrics']:
-                js_result = np.mean(js_results)
-                log.debug(f'Epoch: {epoch} JSD: {js_result: .6f} '
+                try:
+                    js_result = np.mean(js_results)
+                except ValueError: 
+                    js_result = np.nan
+
+                log.debug(f'Epoch: {epoch} '
+                            f'Gen JSD: {js_result: .6f} '
+                            f'Rec JSD: {jsd_rec: .6f} '
                             f'Time: {datetime.now() - start_clock}')
-                results['jsd'].append(js_result)
+                results['gen_jsd'].append(js_result)
+                results['rec_jsd'].append(jsd_rec)
 
             if 'mmd' in eval_config['metrics']: 
-                cd_result = np.mean(cd_results)
-                emd_result = np.mean(emd_results)
-                log.debug(f'Epoch: {epoch} MMD-CD: {cd_result: .6f} MMD-EMD: {emd_result: .6f} '
+                try:
+                    cd_result = np.mean(cd_results)
+                    emd_result = np.mean(emd_results)
+                except ValueError: 
+                    cd_result = np.nan
+                    emd_result = np.nan
+
+                log.debug(f'Epoch: {epoch} '
+                            f'Gen MMD-CD: {cd_result: .6f} Gen MMD-EMD: {emd_result: .6f} '
+                            f'Rec MMD-CD: {cd_rec: .6f} Rec MMD-EMD: {emd_rec: .6f} '
                             f'Time: {datetime.now() - start_clock}')
-                results['mmd-cd'].append(cd_result)
-                results['mmd-emd'].append(emd_result)
+                results['gen_mmd-cd'].append(cd_result)
+                results['gen_mmd-emd'].append(emd_result)
+                results['rec_mmd-cd'].append(cd_rec)
+                results['rec_mmd-emd'].append(emd_rec)
 
         except KeyboardInterrupt:
             log.debug(f'Interrupted during epoch: {epoch}')
@@ -183,12 +239,21 @@ def main(eval_config):
 
     # results = pd.DataFrame.from_dict(results, orient='index', columns=['jsd'])
     results = pd.DataFrame.from_dict(results).set_index('epoch')
-    log.debug(f"Minimum JSD at epoch {results.idxmin()['jsd']}: "
-              f"{results.min()['jsd']: .6f}"
-              f"Minimum MMD-CD at epoch {results.idxmin()['mmd-cd']}: "
-              f"{results.min()['mmd-cd']: .6f}"
-              f"Minimum MMD-EMD at epoch {results.idxmin()['mmd-emd']}: "
-              f"{results.min()['mmd-emd']: .6f}")
+    print(results)
+    if 'jsd' in eval_config['metrics']:
+        log.debug(f"Minimum generation JSD at epoch {results.idxmin()['gen_jsd']}: "
+                f"{results.min()['gen_jsd']: .6f} ")
+        log.debug(f"Minimum reconstruction JSD at epoch {results.idxmin()['rec_jsd']}: "
+                f"{results.min()['rec_jsd']: .6f} ")
+    if 'mmd' in eval_config['metrics']:
+        log.debug(f"Minimum generation MMD-CD at epoch {results.idxmin()['gen_mmd-cd']}: "
+                f"{results.min()['gen_mmd-cd']: .6f} "
+                f"Minimum generation MMD-EMD at epoch {results.idxmin()['gen_mmd-emd']}: "
+                f"{results.min()['gen_mmd-emd']: .6f} "
+                f"Minimum reconstruction MMD-CD at epoch {results.idxmin()['rec_mmd-cd']}: "
+                f"{results.min()['rec_mmd-cd']: .6f} "
+                f"Minimum reconstruction MMD-EMD at epoch {results.idxmin()['rec_mmd-emd']}: "
+                f"{results.min()['rec_mmd-emd']: .6f} ")
 
 
 if __name__ == '__main__':
