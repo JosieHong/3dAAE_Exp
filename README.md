@@ -1,11 +1,11 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-04-30 15:06:47
+ * @LastEditTime: 2022-05-03 22:06:19
 -->
-# PointAAE
+# B659 Experiments on 3dAAE
 
-In this project, we try to edit the latent representation of PointAAE and generate new reasonable point clouds from the operated latent representation. 
+This is the final project of CSCI-B659 Computer Vision, Indiana University. In this project, we try to edit the latent representation of PointAAE and generate new reasonable point clouds from the operated latent representation. 
 
 <img src="./img/pointaae.png" alt="pointaae" width="800"/>
 
@@ -22,7 +22,7 @@ pip install -r requirements.txt
 
 # -----------------------------------------------------------------------
 # The following package is only compatible to CUDA 10.0. If your cuda's 
-# version != 10.0, please do not install the following package. 
+# version != 10.0, please DO NOT install the following package. 
 # You could compute the metric slowly with cpu, or you could chooes not to 
 # comput MMD-CD and MMD-EMD. 
 # The metrics are setted in `./settings/*.json:"metrics":["jsd", "mmd"]`.
@@ -41,7 +41,7 @@ cd $root
 # Please check the settings, especially the cuda and gpu. 
 python train_aae.py --config ./settings/init_exp.json
 
-python train_aae.py --config ./settings/enc_exp.json
+python train_aae.py --config ./settings/dgcnn_enc_exp.json
 ```
 
 A visualization of reconstruction during training:
@@ -57,16 +57,18 @@ We didn't implement the results in the paper. It is expected to train the model 
 ```bash
 > python eval_aae.py --config ./settings/init_exp.json
 
-2022-04-30 15:05:28,720: DEBUG    Minimum generation JSD at epoch 50:  0.596749
-2022-04-30 15:05:28,721: DEBUG    Minimum reconstruction JSD at epoch 150:  0.054483
+2022-05-01 20:11:36,854: DEBUG    Minimum generation JSD at epoch 95:  0.674413
+2022-05-01 20:11:36,854: DEBUG    Minimum reconstruction JSD at epoch 100:  0.062147
 ```
 
 ```bash
-> python eval_aae.py --config ./settings/enc_exp.json
+> python eval_aae.py --config ./settings/dgcnn_enc_exp.json
 
-2022-04-30 14:51:20,269: DEBUG    Minimum generation JSD at epoch 150:  0.779633
-2022-04-30 14:51:20,270: DEBUG    Minimum reconstruction JSD at epoch 285:  0.153872
+2022-05-01 12:38:27,899: DEBUG    Minimum generation JSD at epoch 40:  0.689431
+2022-05-01 12:38:27,900: DEBUG    Minimum reconstruction JSD at epoch 85:  0.167931
 ```
+
+
 
 ## Edit
 
@@ -81,6 +83,8 @@ A visualization of editing (sum two embedded vectors):
 
 
 ## References:
+
+Our experiments are mainly based on the following codebases. We gratefully thank the authors for their wonderful works.
 
 - https://github.com/MaciejZamorski/3d-AAE
 

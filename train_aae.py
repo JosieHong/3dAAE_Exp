@@ -1,7 +1,7 @@
 '''
 Date: 2022-03-27 14:07:34
 LastEditors: yuhhong
-LastEditTime: 2022-04-28 00:32:21
+LastEditTime: 2022-05-02 10:56:25
 '''
 import argparse
 import json
@@ -65,13 +65,8 @@ def main(config):
         from datasets.shapenet import ShapeNetDataset
         dataset = ShapeNetDataset(root_dir=config['data_dir'],
                                   classes=config['classes'])
-    # elif dataset_name == 'faust':
-    #     from datasets.dfaust import DFaustDataset
-    #     dataset = DFaustDataset(root_dir=config['data_dir'],
-    #                             classes=config['classes'])
     else:
-        raise ValueError(f'Invalid dataset name. Expected `shapenet` or '
-                         f'`faust`. Got: `{dataset_name}`')
+        raise ValueError(f'Invalid dataset name. Expected `shapenet`, got: `{dataset_name}`')
     log.debug("Selected {} classes. Loaded {} samples.".format(
         'all' if not config['classes'] else ','.join(config['classes']),
         len(dataset)))
@@ -96,12 +91,8 @@ def main(config):
     if config['reconstruction_loss'].lower() == 'chamfer':
         from losses.champfer_loss import ChamferLoss
         reconstruction_loss = ChamferLoss().to(device)
-    elif config['reconstruction_loss'].lower() == 'earth_mover':
-        from losses.earth_mover_distance import EMD
-        reconstruction_loss = EMD().to(device)
     else:
-        raise ValueError(f'Invalid reconstruction loss. Accepted `chamfer` or '
-                         f'`earth_mover`, got: {config["reconstruction_loss"]}')
+        raise ValueError(f'Invalid reconstruction loss. Accepted `chamfer`, got: {config["reconstruction_loss"]}')
     #
     # Float Tensors
     #

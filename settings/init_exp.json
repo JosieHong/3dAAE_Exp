@@ -8,18 +8,18 @@
 
     "reconstruction_loss": "chamfer",
 
-    "metrics": ["jsd"], 
+    "metrics": ["jsd", "mmd"], 
 
     "dataset": "shapenet",
     "data_dir": "./data/shapenet",
-    "classes": [],
+    "classes": [], 
     "shuffle": true,
     "transforms": ["rotate"],
     "num_workers": 8,
     "n_points": 2048,
     "edit_samples": 16,  
 
-    "max_epochs": 400, 
+    "max_epochs": 100, 
     "batch_size": 32,
     "gp_lambda": 10,
     "reconstruction_coef": 0.05,
@@ -34,7 +34,7 @@
     "normal_std": 0.2,
 
     "seed": 2018,
-    "save_frequency": 50,
+    "save_frequency": 5,
     "epsilon": 0.001,
 
     "arch": "aae",

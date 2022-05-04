@@ -1,8 +1,9 @@
 '''
 Date: 2022-04-06 11:57:32
 LastEditors: yuhhong
-LastEditTime: 2022-04-30 15:04:40
+LastEditTime: 2022-05-02 20:39:51
 '''
+import os
 import argparse
 import json
 import logging
@@ -10,8 +11,6 @@ import random
 import re
 from datetime import datetime
 from importlib import import_module
-from os import listdir
-from os.path import join
 
 import numpy as np
 import pandas as pd
@@ -26,27 +25,26 @@ from utils.util import cuda_setup, setup_logging
 
 def _get_epochs_by_regex(path, regex):
     reg = re.compile(regex)
-    return {int(w[:5]) for w in listdir(path) if reg.match(w)}
+    return {int(w[:5]) for w in os.listdir(path) if reg.match(w)}
 
 
 def main(eval_config):
     # Load hyperparameters as they were during training
-    train_results_path = join(eval_config['results_root'], eval_config['arch'],
+    train_results_path = os.path.join(eval_config['results_root'], eval_config['arch'],
                               eval_config['experiment_name'])
-    with open(join(train_results_path, 'config.json')) as f:
+    with open(os.path.join(train_results_path, 'config.json')) as f:
         train_config = json.load(f)
 
     random.seed(train_config['seed'])
     torch.manual_seed(train_config['seed'])
     torch.cuda.manual_seed_all(train_config['seed'])
 
-    setup_logging(join(train_results_path, 'results'))
+    setup_logging(os.path.join(train_results_path, 'results'))
     log = logging.getLogger(__name__)
 
-    log.debug('Evaluating JensenShannon divergences on validation set on all '
-              'saved epochs.')
+    log.debug('Evaluation on validation set on all saved epochs.')
 
-    weights_path = join(train_results_path, 'weights')
+    weights_path = os.path.join(train_results_path, 'weights')
 
     # Find all epochs that have saved model weights
     e_epochs = _get_epochs_by_regex(weights_path, r'(?P<epoch>\d{5})_E\.pth')
@@ -66,14 +64,6 @@ def main(eval_config):
     if dataset_name == 'shapenet':
         dataset = ShapeNetDataset(root_dir=train_config['data_dir'],
                                   classes=train_config['classes'], split='valid')
-    # elif dataset_name == 'faust':
-    #     from datasets.dfaust import DFaustDataset
-    #     dataset = DFaustDataset(root_dir=train_config['data_dir'],
-    #                             classes=train_config['classes'], split='valid')
-    # elif dataset_name == 'mcgill':
-    #     from datasets.mcgill import McGillDataset
-    #     dataset = McGillDataset(root_dir=train_config['data_dir'],
-    #                             classes=train_config['classes'], split='valid')
     else:
         raise ValueError(f'Invalid dataset name. Expected `shapenet` '
                          f'Got: `{dataset_name}`')
@@ -130,9 +120,9 @@ def main(eval_config):
     for epoch in reversed(epochs): 
         try:
             E.load_state_dict(torch.load(
-                join(weights_path, f'{epoch:05}_E.pth')))
+                os.path.join(weights_path, f'{epoch:05}_E.pth')))
             G.load_state_dict(torch.load(
-                join(weights_path, f'{epoch:05}_G.pth')))
+                os.path.join(weights_path, f'{epoch:05}_G.pth')))
 
             start_clock = datetime.now()
 
@@ -196,8 +186,8 @@ def main(eval_config):
                     try:
                         cd, emd = mmd_between_point_cloud_sets(X, X_g, 
                                         batch_size=eval_config['batch_size'], reduced=True)
-                        cd_results.append(cd)
-                        emd_results.append(emd)
+                        cd_results.append(cd.item())
+                        emd_results.append(emd.item())
                     except ValueError: 
                         # log.debug(f'NaN result in epoch: {epoch}')
                         continue
@@ -214,7 +204,7 @@ def main(eval_config):
                             f'Rec JSD: {jsd_rec: .6f} '
                             f'Time: {datetime.now() - start_clock}')
                 results['gen_jsd'].append(js_result)
-                results['rec_jsd'].append(jsd_rec)
+                results['rec_jsd'].append(jsd_rec.item())
 
             if 'mmd' in eval_config['metrics']: 
                 try:
@@ -230,8 +220,8 @@ def main(eval_config):
                             f'Time: {datetime.now() - start_clock}')
                 results['gen_mmd-cd'].append(cd_result)
                 results['gen_mmd-emd'].append(emd_result)
-                results['rec_mmd-cd'].append(cd_rec)
-                results['rec_mmd-emd'].append(emd_rec)
+                results['rec_mmd-cd'].append(cd_rec.item())
+                results['rec_mmd-emd'].append(emd_rec.item())
 
         except KeyboardInterrupt:
             log.debug(f'Interrupted during epoch: {epoch}')
@@ -239,7 +229,6 @@ def main(eval_config):
 
     # results = pd.DataFrame.from_dict(results, orient='index', columns=['jsd'])
     results = pd.DataFrame.from_dict(results).set_index('epoch')
-    print(results)
     if 'jsd' in eval_config['metrics']:
         log.debug(f"Minimum generation JSD at epoch {results.idxmin()['gen_jsd']}: "
                 f"{results.min()['gen_jsd']: .6f} ")
@@ -254,7 +243,9 @@ def main(eval_config):
                 f"{results.min()['rec_mmd-cd']: .6f} "
                 f"Minimum reconstruction MMD-EMD at epoch {results.idxmin()['rec_mmd-emd']}: "
                 f"{results.min()['rec_mmd-emd']: .6f} ")
-
+    # save the results
+    results.to_csv(os.path.join(train_results_path, "restuls_{}.csv".format("_".join(classes_selected.split(',')))))
+    log.debug(f'Save the final results.')
 
 if __name__ == '__main__':
     logger = logging.getLogger()
