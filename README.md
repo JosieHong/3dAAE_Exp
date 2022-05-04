@@ -1,7 +1,7 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-05-04 15:14:08
+ * @LastEditTime: 2022-05-04 15:15:32
 -->
 # B659 Experiments on 3dAAE
 
@@ -14,7 +14,7 @@ This is the final project of CSCI-B659 Computer Vision, Indiana University. In t
 
 The workflow of our experiments:
  
-<img src="./img/pointaae.png" alt="pointaae" width="700"/>
+<img src="./img/pointaae.png" alt="pointaae" width="70%"/>
 
 If you feel this experiment is inspirable, please cite the original paper of `3dAAE`: 
 
@@ -68,7 +68,7 @@ python train_aae.py --config ./settings/dgcnn_enc_exp.json
 
 A visualization of reconstruction during training:
 
-<img src="./img/init_res.png" alt="init_res" width="500"/>
+<img src="./img/init_res.png" alt="init_res" width="50%"/>
 
 
 
