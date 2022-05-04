@@ -14,7 +14,7 @@ This is the final project of CSCI-B659 Computer Vision, Indiana University. In t
 
 The workflow of our experiments:
  
-<img src="./img/pointaae.png" alt="pointaae" width="70%"/>
+<img src="./img/pointaae.png" alt="pointaae" width="80%"/>
 
 If you feel this experiment is inspirable, please cite the original paper of `3dAAE`: 
 
