@@ -1,18 +1,20 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-05-04 15:05:44
+ * @LastEditTime: 2022-05-04 15:14:08
 -->
 # B659 Experiments on 3dAAE
 
-This is the final project of CSCI-B659 Computer Vision, Indiana University. In this project, we try to edit the latent representation of [3dAAE](https://arxiv.org/abs/1811.07605) and generate new reasonable point clouds from the operated latent representation. Based on the original codes of [3dAAE](https://github.com/MaciejZamorski/3d-AAE), we implement the following things: 
+This is the final project of CSCI-B659 Computer Vision, Indiana University. In this project, we try to edit the latent representation of [3dAAE](https://arxiv.org/abs/1811.07605) and generate new reasonable point clouds from the operated latent representation. Based on the original codes of 3dAAE, we implement the following things: 
 
 - [x] Schedulers in training, `./train_aae.py:EG_scheduler` and `./train_aae.py:D_scheduler`;
 - [x] MMD-CD and MMD-EMD in evaluation metrics, `./metrics/mmd.py`;
 - [x] Editing the vectors and generate point couds, `./edit_aae.py`;
 - [x] Different encoders, `./models/dgcnn_aae.py`; However, it did not perform good so far, so we did not show its in the final report. 
 
-<img src="./img/pointaae.png" alt="pointaae" width="800"/>
+The workflow of our experiments:
+ 
+<img src="./img/pointaae.png" alt="pointaae" width="700"/>
 
 If you feel this experiment is inspirable, please cite the original paper of `3dAAE`: 
 
