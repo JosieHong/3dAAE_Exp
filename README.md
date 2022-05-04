@@ -1,13 +1,31 @@
 <!--
  * @Date: 2022-03-06 10:53:36
  * @LastEditors: yuhhong
- * @LastEditTime: 2022-05-03 22:06:19
+ * @LastEditTime: 2022-05-04 15:05:44
 -->
 # B659 Experiments on 3dAAE
 
-This is the final project of CSCI-B659 Computer Vision, Indiana University. In this project, we try to edit the latent representation of PointAAE and generate new reasonable point clouds from the operated latent representation. 
+This is the final project of CSCI-B659 Computer Vision, Indiana University. In this project, we try to edit the latent representation of [3dAAE](https://arxiv.org/abs/1811.07605) and generate new reasonable point clouds from the operated latent representation. Based on the original codes of [3dAAE](https://github.com/MaciejZamorski/3d-AAE), we implement the following things: 
+
+- [x] Schedulers in training, `./train_aae.py:EG_scheduler` and `./train_aae.py:D_scheduler`;
+- [x] MMD-CD and MMD-EMD in evaluation metrics, `./metrics/mmd.py`;
+- [x] Editing the vectors and generate point couds, `./edit_aae.py`;
+- [x] Different encoders, `./models/dgcnn_aae.py`; However, it did not perform good so far, so we did not show its in the final report. 
 
 <img src="./img/pointaae.png" alt="pointaae" width="800"/>
+
+If you feel this experiment is inspirable, please cite the original paper of `3dAAE`: 
+
+```
+@article{zamorski2018adversarial,
+  title={Adversarial Autoencoders for Compact Representations of 3D Point Clouds},
+  author={Zamorski, Maciej and Zi{\k{e}}ba, Maciej and Klukowski, Piotr and Nowak, Rafa{\l} and Kurach, Karol and Stokowiec, Wojciech and Trzci{\'n}ski, Tomasz},
+  journal={arXiv preprint arXiv:1811.07605},
+  year={2018}
+}
+```
+
+
 
 ## Setup
 
@@ -23,7 +41,7 @@ pip install -r requirements.txt
 # -----------------------------------------------------------------------
 # The following package is only compatible to CUDA 10.0. If your cuda's 
 # version != 10.0, please DO NOT install the following package. 
-# You could compute the metric slowly with cpu, or you could chooes not to 
+# You could compute the metric slowly without cuda, or you could chooes not to 
 # comput MMD-CD and MMD-EMD. 
 # The metrics are setted in `./settings/*.json:"metrics":["jsd", "mmd"]`.
 # -----------------------------------------------------------------------
@@ -34,6 +52,8 @@ make clean
 make
 cd $root
 ```
+
+
 
 ## Train
 
@@ -52,20 +72,12 @@ A visualization of reconstruction during training:
 
 ## Eval
 
-We didn't implement the results in the paper. It is expected to train the model for more than 2000 epochs as the authors did in the paper, but it crashed after 400 iterations. 
+We implement JSD, MMD-CD and MMD-EMD for evaluation. Please chooes the metrics in settings, for instance `"metrics": ["jsd", "mmd"]`.  
 
 ```bash
-> python eval_aae.py --config ./settings/init_exp.json
+python eval_aae.py --config ./settings/init_exp.json
 
-2022-05-01 20:11:36,854: DEBUG    Minimum generation JSD at epoch 95:  0.674413
-2022-05-01 20:11:36,854: DEBUG    Minimum reconstruction JSD at epoch 100:  0.062147
-```
-
-```bash
-> python eval_aae.py --config ./settings/dgcnn_enc_exp.json
-
-2022-05-01 12:38:27,899: DEBUG    Minimum generation JSD at epoch 40:  0.689431
-2022-05-01 12:38:27,900: DEBUG    Minimum reconstruction JSD at epoch 85:  0.167931
+python eval_aae.py --config ./settings/dgcnn_enc_exp.json
 ```
 
 
